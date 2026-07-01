@@ -1,0 +1,36 @@
+{
+    "version": "0.2026.06.09-cn.0",
+    "description": "Warp 中文本地化 & 自定义改造客户端 — 基于 warpdotdev/warp 的社区 fork",
+    "homepage": "https://github.com/Heartcoolman/warp-cn",
+    "license": "Proprietary",
+    "notes": [
+        "warp-cn 是 Warp 终端的中文本地化社区 fork。",
+        "首次启动后进入设置 → Appearance → Language 切换为 中文(简体) 获得完整中文化体验。",
+        "项目地址: https://github.com/Heartcoolman/warp-cn"
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/Heartcoolman/warp-cn/releases/download/v0.2026.06.09-cn.0/WarpOssSetup.exe",
+            "hash": "fafd5f039b4ec6e32e467c7c3df8eea1e0cb3c9d31eb96d4536c7c9ee5ae3dad"
+        }
+    },
+    "innosetup": true,
+    "bin": "Warp.exe",
+    "shortcuts": [
+        [
+            "Warp.exe",
+            "Warp (中文)"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/Heartcoolman/warp-cn",
+        "regex": "/releases/tag/v([\\w.-]+)"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/Heartcoolman/warp-cn/releases/download/v$version/WarpOssSetup.exe"
+            }
+        }
+    }
+}
