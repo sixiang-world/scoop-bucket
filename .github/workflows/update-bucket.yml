@@ -1,0 +1,68 @@
+# ── 自动更新 Scoop manifests ───────────────────────────
+# 定时检查上游 GitHub Release / 更新源，有新版本时自动
+# 更新 bucket/ 下的 manifest 文件并推送。
+#
+# 新增 manifest 时只需：
+#   1. 在 bucket/ 下新建 <app>.json（含 checkver + autoupdate）
+#   2. 在 scripts/ 下新建 update-<app>.py
+#   3. 在本文件的 strategy.matrix.app 中添加 app 名称
+#
+# 触发方式: 每 6 小时自动检查 + 支持手动触发
+# ──────────────────────────────────────────────────────
+
+name: Auto-Update Bucket
+
+on:
+  schedule:
+    - cron: "0 2,8,14,20 * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "强制更新所有 manifest"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  update-manifest:
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [warp-cn]
+    name: Update ${{ matrix.app }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run update script
+        id: update
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 scripts/update-${{ matrix.app }}.py
+
+      - name: Check for changes
+        id: diff
+        run: |
+          MANIFEST="bucket/${{ matrix.app }}.json"
+          if ! git diff --quiet "$MANIFEST" 2>/dev/null; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit and push update
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          MANIFEST="bucket/${{ matrix.app }}.json"
+          NEW_VER=$(python3 -c "import json; print(json.load(open('$MANIFEST'))['version'])")
+          git config user.name "scoop-bot"
+          git config user.email "scoop-bot@users.noreply.github.com"
+          git add "$MANIFEST"
+          git commit -m "chore(${{ matrix.app }}): bump to ${NEW_VER}"
+          git push

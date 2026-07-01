@@ -4,35 +4,34 @@ Scoop Bucket 自动更新脚本
 定期检查上游 GitHub Release，有新版本时自动更新 manifest。
 
 用法:
-    python scripts/update-warp-cn.py         # 检查并更新 warp-cn
-    python scripts/update-warp-cn.py --dry   # 只检查，不写入
+    python scripts/update-warp-cn.py              # 检查并更新
+    python scripts/update-warp-cn.py --dry        # 只检查不写入
+    python scripts/update-warp-cn.py --force      # 强制重新计算 hash
 """
 
 import hashlib
 import json
 import os
-import re
 import sys
-import time
 import urllib.request
 
 # ── 配置 ──────────────────────────────────────────────
 MANIFEST_PATH = "bucket/warp-cn.json"
 REPO = "Heartcoolman/warp-cn"
-ASSET_NAME = "WarpOssSetup.exe"  # Windows 安装包
+ASSET_NAME = "WarpOssSetup.exe"  # InnoSetup 安装包（内含 warp-oss.exe）
 
 DRY_RUN = "--dry" in sys.argv
+FORCE = "--force" in sys.argv
 
 # ── GitHub API ────────────────────────────────────────
 
 
 def api_get(url):
-    """GET GitHub API, 携带 token 避免限流"""
     headers = {
         "Accept": "application/vnd.github.v3+json",
         "User-Agent": "scoop-bucket-updater/1.0",
     }
-    token = os.environ.get("GITHUB_TOKEN")
+    token = os.environ.get("GITHUB_TOKEN", os.environ.get("GH_TOKEN"))
     if token:
         headers["Authorization"] = f"Bearer {token}"
     req = urllib.request.Request(url, headers=headers)
@@ -47,14 +46,12 @@ def get_latest_release():
     version = tag.lstrip("v")
 
     # 找到 Windows 的 exe asset
-    exe_asset = None
-    for asset in data["assets"]:
-        if asset["name"] == ASSET_NAME:
-            exe_asset = asset
-            break
+    exe_asset = next(
+        (a for a in data["assets"] if a["name"] == ASSET_NAME), None
+    )
 
     if not exe_asset:
-        print(f"::error::No asset named '{ASSET_NAME}' found in latest release")
+        print(f"::error::No asset named '{ASSET_NAME}' in latest release")
         sys.exit(1)
 
     return tag, version, exe_asset["browser_download_url"]
@@ -65,12 +62,19 @@ def compute_sha256(url):
     print(f"  Downloading: {url}")
     sha256 = hashlib.sha256()
     req = urllib.request.Request(url, headers={"User-Agent": "scoop-bucket-updater/1.0"})
-    with urllib.request.urlopen(req, timeout=300) as resp:
+    # 先取 content-length 预估下载量
+    with urllib.request.urlopen(req, timeout=30) as head_check:
+        size = head_check.headers.get("Content-Length", "?")
+    print(f"  Size: {int(size) // 1024 // 1024} MB" if size != "?" else "  Size: unknown")
+
+    with urllib.request.urlopen(req, timeout=600) as resp:
+        downloaded = 0
         while True:
             chunk = resp.read(8192)
             if not chunk:
                 break
             sha256.update(chunk)
+            downloaded += len(chunk)
     return sha256.hexdigest()
 
 
@@ -82,7 +86,7 @@ def read_manifest():
 def write_manifest(manifest):
     with open(MANIFEST_PATH, "w", encoding="utf-8", newline="\n") as f:
         json.dump(manifest, f, indent=4, ensure_ascii=False)
-        f.write("\n")  # trailing newline
+        f.write("\n")
 
 
 def update_manifest(new_version, new_hash, new_url):
@@ -90,11 +94,14 @@ def update_manifest(new_version, new_hash, new_url):
     manifest = read_manifest()
     old_version = manifest.get("version", "(none)")
 
-    if new_version == old_version:
-        print(f"  No update needed (current: {old_version})")
+    if new_version == old_version and not FORCE:
+        print(f"  ✓ Already up-to-date (version: {old_version})")
         return False
 
-    print(f"  Updating: {old_version} → {new_version}")
+    if new_version != old_version:
+        print(f"  Version: {old_version} → {new_version}")
+    else:
+        print(f"  [--force] Re-computing hash for {new_version}")
 
     manifest["version"] = new_version
     manifest["architecture"]["64bit"]["url"] = new_url
@@ -121,8 +128,8 @@ def main():
     current_version = manifest.get("version", "0.0.0")
     print(f"  Current manifest version: {current_version}")
 
-    # 版本比较（简洁的字符串比较，因为格式固定为 0.YYYY.MM.DD-cn.N）
-    if version == current_version:
+    # 版本相同且非 force 模式则跳过下载
+    if version == current_version and not FORCE:
         print("  ✓ Already up-to-date")
         return
 

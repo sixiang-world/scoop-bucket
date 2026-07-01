@@ -1,12 +1,15 @@
 {
     "version": "0.2026.06.09-cn.0",
-    "description": "Warp 中文本地化 & 自定义改造客户端 — 基于 warpdotdev/warp 的社区 fork",
+    "description": "Warp 终端 · 中文本地化 & 自定义改造社区版（fork from warpdotdev/warp）",
     "homepage": "https://github.com/Heartcoolman/warp-cn",
     "license": "Proprietary",
     "notes": [
-        "warp-cn 是 Warp 终端的中文本地化社区 fork。",
-        "首次启动后进入设置 → Appearance → Language 切换为 中文(简体) 获得完整中文化体验。",
-        "项目地址: https://github.com/Heartcoolman/warp-cn"
+        "安装后如果 CLI 需要设置 WARP_CLI_MODE=1 环境变量才能运行，请手动执行:",
+        "  $env:WARP_CLI_MODE=1",
+        "或使用 scoop shim 运行: warp-oss --help",
+        "",
+        "首次启动后进入 Settings → Appearance → Language 切换为 中文(简体)。",
+        "项目主页: https://github.com/Heartcoolman/warp-cn"
     ],
     "architecture": {
         "64bit": {
@@ -15,21 +18,30 @@
         }
     },
     "innosetup": true,
-    "bin": "Warp.exe",
+    "bin": [
+        "warp-oss.exe",
+        [
+            "warp-oss.exe",
+            "warp-oss",
+            "--help"
+        ]
+    ],
     "shortcuts": [
         [
-            "Warp.exe",
+            "warp-oss.exe",
             "Warp (中文)"
         ]
     ],
     "checkver": {
-        "github": "https://github.com/Heartcoolman/warp-cn",
-        "regex": "/releases/tag/v([\\w.-]+)"
+        "github": "https://github.com/Heartcoolman/warp-cn"
     },
     "autoupdate": {
         "architecture": {
             "64bit": {
-                "url": "https://github.com/Heartcoolman/warp-cn/releases/download/v$version/WarpOssSetup.exe"
+                "url": "https://github.com/Heartcoolman/warp-cn/releases/download/v$version/WarpOssSetup.exe",
+                "hash": {
+                    "mode": "download"
+                }
             }
         }
     }
