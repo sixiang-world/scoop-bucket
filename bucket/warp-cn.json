@@ -1,5 +1,5 @@
 {
-    "version": "0.2026.10.18-cn.0",
+    "version": "0.2026.10.12-cn.0",
     "description": "Warp 终端 · 中文本地化 & 自定义改造社区版（fork from warpdotdev/warp）",
     "homepage": "https://github.com/Heartcoolman/warp-cn",
     "license": "Proprietary",
@@ -13,7 +13,7 @@
     ],
     "architecture": {
         "64bit": {
-            "url": "https://github.com/Heartcoolman/warp-cn/releases/download/v0.2026.10.18-cn.0/WarpOssSetup.exe",
+            "url": "https://github.com/Heartcoolman/warp-cn/releases/download/v0.2026.10.12-cn.0/WarpOssSetup.exe",
             "hash": "8a5dd1a43118d24cacdb99e106a7f68da00e1083d04a6171aeb31825fa6d2945"
         }
     },
